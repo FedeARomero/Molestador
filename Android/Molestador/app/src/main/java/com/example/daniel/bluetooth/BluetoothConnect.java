@@ -4,11 +4,9 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.util.Log;
-import android.widget.Toast;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectInputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.util.UUID;
@@ -21,8 +19,8 @@ public class BluetoothConnect extends Thread {
     private String mac;
     private BluetoothDevice device;
     private BluetoothAdapter bt;
-    private InputStream in;
-    private OutputStream out;
+    //private InputStream in;
+   // private OutputStream out;
 
     public BluetoothConnect(String mac, BluetoothDevice device, BluetoothAdapter bt) {
         this.mac = mac;
@@ -38,8 +36,8 @@ public class BluetoothConnect extends Thread {
                 socket = device.createInsecureRfcommSocketToServiceRecord(MY_UUID);
                 Method m = device.getClass().getMethod("createRfcommSocket", new Class[] {int.class});
                 socket = (BluetoothSocket) m.invoke(device, 1);
-                in = socket.getInputStream();
-                out = socket.getOutputStream();
+                InputStream in = socket.getInputStream();
+                OutputStream out = socket.getOutputStream();
 
                 DatosBluetooth btDatos = DatosBluetooth.getInstance();
                 btDatos.setSocket(socket);

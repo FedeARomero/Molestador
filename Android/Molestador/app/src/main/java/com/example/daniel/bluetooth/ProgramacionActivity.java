@@ -11,7 +11,10 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.TimePicker;
+
+import java.lang.ref.WeakReference;
 import java.util.Calendar;
+import java.util.Locale;
 
 public class ProgramacionActivity extends AppCompatActivity {
 
@@ -19,15 +22,54 @@ public class ProgramacionActivity extends AppCompatActivity {
     private EscribirBluetooth salida;
     private LeerBluetooth leer;
     private TextView recibido;
-    private Handler handler;
+    private final Handler handler = new MyHandler(this);
     private boolean esVisible;
+
+    private TextView infoDesafioBotones;
+    private TextView infoDesafioMoverse;
+    private TextView horaSeleccionada;
+
+    private static class MyHandler extends Handler {
+        private final WeakReference<ProgramacionActivity> myClassWeakReference;
+
+        private MyHandler(ProgramacionActivity instancia) {
+            myClassWeakReference = new WeakReference<>(instancia);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            ProgramacionActivity myClass = myClassWeakReference.get();
+            String key = "recibido", name = "visible";
+            if (myClass != null) {
+                Bundle bundle = msg.getData();
+                String cad = bundle.getString(key);
+                if (cad != null) {
+                    String subCad = cad.substring(0, 1);
+                    Integer msj = Integer.valueOf(subCad);
+
+                    myClass.setRecibido(cad);                                                       //recibido.setText(cad);
+                    //Si la cadena que recibe es "APAGAR", lanzo la actividad de gestos de desbloqueo
+                    if (msj == MensajeRx.ACTIVAR_SENSORES.ordinal()) {                              //(subCad.equals("" + MensajeRx.ACTIVAR_SENSORES.ordinal())) {
+                        Intent intent = new Intent(myClass, SensoresActivity.class);
+                        intent.putExtra(name, myClass.getEsBisible());
+                        myClass.startActivity(intent);
+                        myClass.setHoraSeleccionadad("");                                           //horaSeleccionada.setText("");
+                    } else if (msj == MensajeRx.INFO_BOTONES.ordinal()) {                           //(subCad.equals("" + MensajeRx.INFO_BOTONES.ordinal())) {
+                        myClass.setInfoBotones(cad);                                                //infoDesafioBotones.setText(cad);
+                    } else {
+                        myClass.setInfoMoverse(cad);                                                //infoDesafioMoverse.setText(cad);
+                    }
+                }
+            }
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_programacion);
 
-        handler = new Handler(Looper.getMainLooper());
+        //Handler handler = new Handler(Looper.getMainLooper());
         btDatos = DatosBluetooth.getInstance();
         salida = EscribirBluetooth.getInstance();
 
@@ -39,11 +81,12 @@ public class ProgramacionActivity extends AppCompatActivity {
             }
         });
 
-        final TextView infoDesafioBotones = findViewById(R.id.textDesafioBotones);
-        final TextView infoDesafioMoverse = findViewById(R.id.textDesafioMoverse);
+        infoDesafioBotones = findViewById(R.id.textDesafioBotones);
+        infoDesafioMoverse = findViewById(R.id.textDesafioMoverse);
+        horaSeleccionada = findViewById(R.id.textHora);
 
-        final TextView horaSeleccionada = findViewById(R.id.textHora);
         Button btnProgAlarma = findViewById(R.id.buttonProgAlarma);
+
         btnProgAlarma.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -55,8 +98,10 @@ public class ProgramacionActivity extends AppCompatActivity {
                         new TimePickerDialog.OnTimeSetListener() {
                             @Override
                             public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
-                                String hora = String.format("%02d:%02d", hourOfDay, minute);
-                                horaSeleccionada.setText("Alarma programada: " + hora);
+                                String formato = "%02d:%02d";
+                                String hora = String.format(Locale.US, formato, hourOfDay, minute);
+                                CharSequence texto = "Alarma programada: " + hora;
+                                horaSeleccionada.setText(texto);
                                 salida.escribir(MensajeTx.SET_ALARMA, hora);
                             }
                         }, mHour, mMinute, true);
@@ -64,32 +109,57 @@ public class ProgramacionActivity extends AppCompatActivity {
             }
         });
 
-        if(Looper.myLooper() == null) {
+        if (Looper.myLooper() == null) {
             Looper.prepare();
         }
-        handler = new Handler() {
+        /*Handler handler = new Handler() {
             @Override
             public void handleMessage(Message msg) {
                 Bundle bundle = msg.getData();
                 String cad = bundle.getString("recibido");
-                String subCad = cad.substring(0,1);
+                String subCad = cad.substring(0, 1);
                 recibido.setText(cad);
                 //Si la cadena que recibe es "APAGAR", lanzo la actividad de gestos de desbloqueo
-                if(subCad.equals("" + MensajeRx.ACTIVAR_SENSORES.ordinal())) {
+                if (subCad.equals("" + MensajeRx.ACTIVAR_SENSORES.ordinal())) {
                     Intent intent = new Intent(ProgramacionActivity.this, SensoresActivity.class);
                     intent.putExtra("visible", esVisible);
                     startActivity(intent);
                     horaSeleccionada.setText("");
-                } else if(subCad.equals("" + MensajeRx.INFO_BOTONES.ordinal())) {
+                } else if (subCad.equals("" + MensajeRx.INFO_BOTONES.ordinal())) {
                     infoDesafioBotones.setText(cad);
                 } else {
                     infoDesafioMoverse.setText(cad);
                 }
             }
-        };
+        };*/
+        //Handler handler = getHandler();
         recibido = findViewById(R.id.textViewData);
         leer = new LeerBluetooth(handler);
         leer.start();
+    }
+
+    protected boolean getEsBisible() {
+        return esVisible;
+    }
+
+    void setRecibido(String texto) {
+        recibido.setText(texto);
+    }
+
+    void setInfoBotones(String texto) {
+        infoDesafioBotones.setText(texto);
+    }
+
+    void setInfoMoverse(String texto) {
+        infoDesafioMoverse.setText(texto);
+    }
+
+    void setHoraSeleccionadad(String texto) {
+        horaSeleccionada.setText(texto);
+    }
+
+    public Handler getHandler() {
+        return new MyHandler(this);
     }
 
     @Override

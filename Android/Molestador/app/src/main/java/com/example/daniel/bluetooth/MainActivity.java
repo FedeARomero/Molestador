@@ -3,6 +3,7 @@ package com.example.daniel.bluetooth;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
+import android.content.Context;
 import android.content.Intent;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
@@ -26,9 +27,9 @@ public class MainActivity extends AppCompatActivity {
     private ArrayAdapter arrayAdapter;
     private BluetoothAdapter bt;
     private BluetoothDevice device;
-    private BluetoothSocket tmp = null;
+    //private BluetoothSocket tmp = null;
     private BluetoothSocket mmSocket = null;
-    UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
+    //UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
     private static final String TAG = "Main";
 
     @Override
@@ -72,7 +73,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Set<BluetoothDevice> pairedDevices = bt.getBondedDevices();
-                ArrayList listDevice = new ArrayList();
+                ArrayList<String> listDevice = new ArrayList<>();
 
                 if (pairedDevices.size() > 0) {
                     for (BluetoothDevice device : pairedDevices) {
@@ -83,7 +84,7 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 listView = findViewById(R.id.deviceList);
-                arrayAdapter = new ArrayAdapter(getApplicationContext(), android.R.layout.simple_list_item_1, listDevice);
+                arrayAdapter = new ArrayAdapter<>(getApplicationContext(), android.R.layout.simple_list_item_1, listDevice);
                 listView.setAdapter(arrayAdapter);
 
                 listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -95,14 +96,16 @@ public class MainActivity extends AppCompatActivity {
 
                         conectar.run();
                         mmSocket = conectar.getSocket();
+                        Context contexto = MainActivity.this;
+                        int duracion = Toast.LENGTH_SHORT;
 
                         if(mmSocket.isConnected()) {
-                            Toast.makeText(MainActivity.this, "Conectado", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(contexto, "Conectado", duracion).show();
                             Log.i(TAG, "Bt conectado");
-                            Intent intent = new Intent(MainActivity.this, ProgramacionActivity.class);
+                            Intent intent = new Intent(contexto, ProgramacionActivity.class);
                             startActivity(intent);
                         } else {
-                            Toast.makeText(MainActivity.this, "No conectado", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(contexto, "No conectado", duracion).show();
                             Log.e(TAG, "Bt no conectado");
                         }
                     }
