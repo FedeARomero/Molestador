@@ -18,9 +18,13 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+
 public class SensoresActivity extends AppCompatActivity implements SensorEventListener {
 
     private Toast toast;
+    private Context contexto;
+
+    private LeerBluetooth leer;
 
     private SensorManager sensorManager;
 
@@ -43,6 +47,7 @@ public class SensoresActivity extends AppCompatActivity implements SensorEventLi
     private float gravity[] = new float[3];
     private float geomagnetic[] = new float[3];
 
+    private int duracion = Toast.LENGTH_SHORT;
     private int contadorPasadas;
     private int contadorGiros;
     private int angulo;
@@ -64,14 +69,16 @@ public class SensoresActivity extends AppCompatActivity implements SensorEventLi
     private boolean isPasadasCompletadas;
 
     private static final int LUZ_MINIMA = 50;
-    private static final int LUZ_MAXIMA = 300;
+    private static final int LUZ_MAXIMA = 100;
     private static final int GRADOS_GIRO = 30;
     private static final int CANT_PASADAS = 10;
     private static final int CANT_GIRO = 5;
 
     private EscribirBluetooth salida;
 
-    @Override
+    private long tiempoAnterior = 0;
+
+       @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sensores);
@@ -88,8 +95,7 @@ public class SensoresActivity extends AppCompatActivity implements SensorEventLi
 
         salida = EscribirBluetooth.getInstance();
 
-        toast = new Toast(getApplicationContext());
-        toast.setDuration(Toast.LENGTH_SHORT);
+        contexto = getApplicationContext();
 
         String sensor_error = getResources().getString(R.string.error_no_sensor);
 
@@ -214,6 +220,11 @@ public class SensoresActivity extends AppCompatActivity implements SensorEventLi
                 return;
         }
 
+        if(System.currentTimeMillis() - tiempoAnterior > 5000) {
+            salida.escribir(MensajeTx.INFO_DESAFIO, infoPasadasGiros());
+            tiempoAnterior = System.currentTimeMillis();
+        }
+
         if (sensorType != Sensor.TYPE_LIGHT && sensorType != Sensor.TYPE_PROXIMITY) {
 
             computeOrientation();
@@ -235,7 +246,6 @@ public class SensoresActivity extends AppCompatActivity implements SensorEventLi
             } else if (proximity == 100 && mediaPasada) {
                 mediaPasada = false;
                 contadorPasadas++;
-                salida.escribir(MensajeTx.INFO_DESAFIO, infoPasadasGiros(contadorPasadas, contadorGiros));
                 pbPasadas.setProgress(contadorPasadas);
                 isPasadasCompletadas = contadorPasadas == CANT_PASADAS;
             }
@@ -251,7 +261,7 @@ public class SensoresActivity extends AppCompatActivity implements SensorEventLi
                 int offsetX = 0, offsetY = -15;
                 int gravity = Gravity.CENTER_HORIZONTAL | Gravity.CENTER_VERTICAL;
 
-                toast.setText(texto);
+                toast = Toast.makeText(contexto, texto, duracion);
                 toast.setGravity(gravity, offsetX, offsetY);
                 toast.show();
 
@@ -293,8 +303,6 @@ public class SensoresActivity extends AppCompatActivity implements SensorEventLi
 
             if (izquierda && derecha) {
                 contadorGiros++;
-                String info = infoPasadasGiros(contadorPasadas, contadorGiros);
-                salida.escribir(MensajeTx.INFO_DESAFIO, info);
                 izquierda = false;
                 derecha = false;
                 isGirosCompletados = contadorGiros == CANT_GIRO;
@@ -315,7 +323,7 @@ public class SensoresActivity extends AppCompatActivity implements SensorEventLi
                 int offsetX = 0, offsetY = 55;
                 int gravity = Gravity.CENTER | Gravity.BOTTOM;
 
-                toast.setText(texto);
+                toast = Toast.makeText(contexto, texto, duracion);
                 toast.setGravity(gravity, offsetX, offsetY);
                 toast.show();
 
@@ -325,6 +333,7 @@ public class SensoresActivity extends AppCompatActivity implements SensorEventLi
             }
         }
     }
+
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
@@ -343,8 +352,8 @@ public class SensoresActivity extends AppCompatActivity implements SensorEventLi
         borrarNotificacion();
     }
 
-    private String infoPasadasGiros(int pasadasProximidad, int contadorGiros) {
-        return "Pasadas: " + pasadasProximidad + " - Giros: " + contadorGiros;
+    private String infoPasadasGiros() {
+        return "Pasadas: " + contadorPasadas + " - Giros: " + contadorGiros;
     }
 
     private void lanzarNotificacion() {
@@ -367,6 +376,7 @@ public class SensoresActivity extends AppCompatActivity implements SensorEventLi
     }
 
     private void salir() {
+        salida.escribir(MensajeTx.INFO_DESAFIO, infoPasadasGiros());
         Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         salida.escribir(MensajeTx.APAGAR_ALARMA, MensajeTx.APAGAR_ALARMA.toString());
 
@@ -377,7 +387,7 @@ public class SensoresActivity extends AppCompatActivity implements SensorEventLi
         texto = "Alarma desactivada";
         Context contexto = SensoresActivity.this;
 
-        toast = new Toast(contexto);
+        toast = Toast.makeText(contexto, texto, duracion);
         toast.setText(texto);
         toast.show();
         finish();

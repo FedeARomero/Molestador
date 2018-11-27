@@ -2,11 +2,13 @@ package com.example.daniel.bluetooth;
 
 import android.app.TimePickerDialog;
 import android.content.Intent;
+import android.graphics.Typeface;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -22,12 +24,13 @@ public class ProgramacionActivity extends AppCompatActivity {
     private EscribirBluetooth salida;
     private LeerBluetooth leer;
     private TextView recibido;
-    private final Handler handler = new MyHandler(this);
     private boolean esVisible;
 
     private TextView infoDesafioBotones;
     private TextView infoDesafioMoverse;
     private TextView horaSeleccionada;
+
+    private static final String TAG = "HANDLER";
 
     private static class MyHandler extends Handler {
         private final WeakReference<ProgramacionActivity> myClassWeakReference;
@@ -45,9 +48,10 @@ public class ProgramacionActivity extends AppCompatActivity {
                 String cad = bundle.getString(key);
                 if (cad != null) {
                     String subCad = cad.substring(0, 1);
+                    String info = cad.substring(1);
                     Integer msj = Integer.valueOf(subCad);
 
-                    myClass.setRecibido(cad);                                                       //recibido.setText(cad);
+                    myClass.mostrarLog(cad);                                              //recibido.setText(cad);
                     //Si la cadena que recibe es "APAGAR", lanzo la actividad de gestos de desbloqueo
                     if (msj == MensajeRx.ACTIVAR_SENSORES.ordinal()) {                              //(subCad.equals("" + MensajeRx.ACTIVAR_SENSORES.ordinal())) {
                         Intent intent = new Intent(myClass, SensoresActivity.class);
@@ -55,9 +59,9 @@ public class ProgramacionActivity extends AppCompatActivity {
                         myClass.startActivity(intent);
                         myClass.setHoraSeleccionadad("");                                           //horaSeleccionada.setText("");
                     } else if (msj == MensajeRx.INFO_BOTONES.ordinal()) {                           //(subCad.equals("" + MensajeRx.INFO_BOTONES.ordinal())) {
-                        myClass.setInfoBotones(cad);                                                //infoDesafioBotones.setText(cad);
+                        myClass.setInfoBotones(info);                                                //infoDesafioBotones.setText(cad);
                     } else {
-                        myClass.setInfoMoverse(cad);                                                //infoDesafioMoverse.setText(cad);
+                        myClass.setInfoMoverse(info);                                                //infoDesafioMoverse.setText(cad);
                     }
                 }
             }
@@ -82,7 +86,9 @@ public class ProgramacionActivity extends AppCompatActivity {
         });
 
         infoDesafioBotones = findViewById(R.id.textDesafioBotones);
+        infoDesafioBotones.setTypeface(Typeface.defaultFromStyle(Typeface.BOLD));
         infoDesafioMoverse = findViewById(R.id.textDesafioMoverse);
+        infoDesafioMoverse.setTypeface(Typeface.defaultFromStyle(Typeface.BOLD));
         horaSeleccionada = findViewById(R.id.textHora);
 
         Button btnProgAlarma = findViewById(R.id.buttonProgAlarma);
@@ -132,9 +138,13 @@ public class ProgramacionActivity extends AppCompatActivity {
                 }
             }
         };*/
-        //Handler handler = getHandler();
+        Handler handler = new MyHandler(this);
         recibido = findViewById(R.id.textViewData);
-        leer = new LeerBluetooth(handler);
+        try {
+            leer = new LeerBluetooth(handler);
+        } catch (Exception e) {
+            Log.e(TAG, e.getMessage());
+        }
         leer.start();
     }
 
@@ -142,8 +152,8 @@ public class ProgramacionActivity extends AppCompatActivity {
         return esVisible;
     }
 
-    void setRecibido(String texto) {
-        recibido.setText(texto);
+    void mostrarLog(String texto) {
+        Log.d("Mensaje", texto);
     }
 
     void setInfoBotones(String texto) {
